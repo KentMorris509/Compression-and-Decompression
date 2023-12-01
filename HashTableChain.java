@@ -63,10 +63,26 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
         }
         for(Entry<K,V> nextItem: table[index]){
             if(nextItem.getKey().equals(key))
-                return nextItem.getValue;
+                return nextItem.getValue();
         }
         return null;
     }
 
-    
+    // methods we need to make still
+    public boolean containsKey(K key){
+        return false;
+    }
+
+    public V remove(K key){
+        return null;
+    }
+
+    public void put(K key, V value){
+        
+    }
+
+    public  int thresholdSize(){
+        return 0;
+    }
+
 }
