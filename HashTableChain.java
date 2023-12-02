@@ -53,15 +53,15 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
         numKeys = 0;
     }
 
-    public V get(Object key) {
-        int index = key.hashCode() % table.length;
+    public V get(K key) {
+        int index = hashFunction(key);
         if(index < 0){
             index += table.length;
         }
-        if(table[index] == null){
-            return null;
-        }
-        for(Entry<K,V> nextItem: table[index]){
+        LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
+
+        
+        for(Entry<K,V> nextItem: bucketList){
             if(nextItem.getKey().equals(key))
                 return nextItem.getValue();
         }
@@ -70,19 +70,105 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
 
     // methods we need to make still
     public boolean containsKey(K key){
+        int index = hashFunction(key);
+        LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
+
+        for(Entry<K,V> nextItem: bucketList){
+            if(nextItem.getKey().equals(key)){
+                return true;
+            }
+        }
         return false;
     }
 
     public V remove(K key){
+        int index = hashFunction(key);
+        LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
+
+        for(Entry<K,V> nextItem: bucketList){
+            if(nextItem.getKey().equals(key)){
+
+                bucketList.remove(nextItem);
+                numKeys--;
+                return nextItem.getValue();
+            }
+        }
+
+        // if we don't find a key
         return null;
-    }
+
+    };
 
     public void put(K key, V value){
-        
+        int index =  hashFunction(key);
+        LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
+
+        // Check if our load Threshold has been exceeded and if so rehash
+        if (bucketList.size() > LOAD_THRESHOLD){
+
+            rehashTable();
+            // fetch the linked list after resizing it
+            bucketList = getLinkedListForBucket(hashFunction(key));
+
+        }
+        for(Entry<K,V> nextItem: bucketList){
+            if(nextItem.getKey().equals(key)){
+               nextItem.setValue(value);
+               return;
+            }
+        }
+        // if we don't find a key then add a new entry to our bucket
+        bucketList.add(new Entry<>(key,value));
+        numKeys++;
     }
 
-    public  int thresholdSize(){
-        return 0;
+    public  int size(){
+        return numKeys;
     }
 
+    private void rehashTable(){
+        int newCAPACITY = table.length * 2;
+        LinkedList<Entry<K, V>>[] newTable = new LinkedList[newCAPACITY];
+
+        for (LinkedList<Entry<K,V>> list : table){
+            if (list != null){
+                for(Entry<K,V> nextItem: list){
+                    int newIndex = hashFunction(nextItem.getKey());
+                    LinkedList<Entry<K, V>> newList = getLinkedListForBucket(newIndex);
+                    newList.add(nextItem);
+                }
+            }
+        }
+        table = newTable;
+    }
+
+    private int hashFunction(K key) {
+        return key.hashCode() % table.length;
+    }
+    
+
+    private LinkedList<Entry<K, V>> getLinkedListForBucket(int bucketIndex) {
+        if (table[bucketIndex] == null) {
+            table[bucketIndex] = new LinkedList<>();
+        }
+        return table[bucketIndex];
+    }
+
+
+ public static void main(String[] args) {
+        HashTableChain<String, Integer> hashMap = new HashTableChain<>();
+
+        // Example usage
+        hashMap.put("one", 1);
+        hashMap.put("two", 2);
+        hashMap.put("three", 3);
+
+        System.out.println("Size: " + hashMap.size());
+        System.out.println("Contains key 'two': " + hashMap.containsKey("two"));
+        System.out.println("Value for key 'three': " + hashMap.get("three"));
+
+        hashMap.remove("one");
+
+        System.out.println("Size after removal: " + hashMap.size());
+    }
 }

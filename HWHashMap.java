@@ -15,5 +15,5 @@ public interface HWHashMap<K,V>
     boolean containsKey(K key);
 
     // method to get the size of the HashMap to check for rehashing
-    int thresholdSize();
+    int size();
 }
