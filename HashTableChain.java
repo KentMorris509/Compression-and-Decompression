@@ -40,17 +40,20 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
     // constant variable for Hash Table Chain
     private LinkedList<Entry<K,V>>[] table;
     private int numKeys;
+    private int rehashes;
     private static final int CAPACITY = 181;    // We need to figure our what to make the default capacity, Im thinking 181
-    private static final double LOAD_THRESHOLD = 15; // I think he recommended 15
+    private static final double LOAD_THRESHOLD = 17; // I think he recommended 15
 
     public HashTableChain(){
         table = new LinkedList[CAPACITY];
         numKeys = 0;
+        rehashes = 0;
     }
 
     public HashTableChain(int cap) {
         table = new LinkedList[cap];
         numKeys = 0;
+        rehashes = 0;
     }
 
     public V get(K key) {
@@ -122,8 +125,12 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
         numKeys++;
     }
 
-    public  int size(){
+    public int size(){
         return numKeys;
+    }
+
+    public int numRehashes(){
+        return rehashes;
     }
 
     private void rehashTable(){
@@ -139,6 +146,7 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
                 }
             }
         }
+        rehashes++;
         table = newTable;
     }
 
