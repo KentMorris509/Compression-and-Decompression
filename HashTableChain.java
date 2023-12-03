@@ -44,12 +44,14 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
     private static final int CAPACITY = 181;    // We need to figure our what to make the default capacity, Im thinking 181
     private static final double LOAD_THRESHOLD = 17; // I think he recommended 15
 
+    @SuppressWarnings("unchecked")
     public HashTableChain(){
         table = new LinkedList[CAPACITY];
         numKeys = 0;
         rehashes = 0;
     }
 
+    @SuppressWarnings("unchecked")
     public HashTableChain(int cap) {
         table = new LinkedList[cap];
         numKeys = 0;
@@ -58,9 +60,6 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
 
     public V get(K key) {
         int index = hashFunction(key);
-        if(index < 0){
-            index += table.length;
-        }
         LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
 
         
@@ -102,28 +101,32 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
 
     };
 
-    public void put(K key, V value){
-        int index =  hashFunction(key);
+    public void put(K key, V value) {
+        int index = hashFunction(key);
         LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
 
         // Check if our load Threshold has been exceeded and if so rehash
-        if (bucketList.size() > LOAD_THRESHOLD){
-
+        if (bucketList.size() > LOAD_THRESHOLD) {
             rehashTable();
             // fetch the linked list after resizing it
             bucketList = getLinkedListForBucket(hashFunction(key));
-
         }
-        for(Entry<K,V> nextItem: bucketList){
-            if(nextItem.getKey().equals(key)){
-               nextItem.setValue(value);
-               return;
+
+        // Use an iterator to avoid ConcurrentModificationException
+        Iterator<Entry<K, V>> iterator = bucketList.iterator();
+        while (iterator.hasNext()) {
+            Entry<K, V> nextItem = iterator.next();
+            if (nextItem.getKey().equals(key)) {
+                nextItem.setValue(value);
+                return;
             }
         }
+
         // if we don't find a key then add a new entry to our bucket
-        bucketList.add(new Entry<>(key,value));
+        bucketList.add(new Entry<>(key, value));
         numKeys++;
     }
+
 
     public int size(){
         return numKeys;
@@ -133,22 +136,30 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
         return rehashes;
     }
 
-    private void rehashTable(){
+    private void rehashTable() {
         int newCAPACITY = table.length * 2;
+
+        @SuppressWarnings("unchecked")
         LinkedList<Entry<K, V>>[] newTable = new LinkedList[newCAPACITY];
 
-        for (LinkedList<Entry<K,V>> list : table){
-            if (list != null){
-                for(Entry<K,V> nextItem: list){
-                    int newIndex = hashFunction(nextItem.getKey());
-                    LinkedList<Entry<K, V>> newList = getLinkedListForBucket(newIndex);
-                    newList.add(nextItem);
-                }
+        List<Entry<K, V>> allEntries = new ArrayList<>();
+
+        for (LinkedList<Entry<K, V>> list : table) {
+            if (list != null) {
+                allEntries.addAll(list);
             }
         }
+
+        for (Entry<K, V> nextItem : allEntries) {
+            int newIndex = hashFunction(nextItem.getKey());
+            LinkedList<Entry<K, V>> newList = getLinkedListForBucket(newIndex);
+            newList.add(nextItem);
+        }
+
         rehashes++;
         table = newTable;
     }
+
 
     private int hashFunction(K key) {
         return key.hashCode() % table.length;
@@ -156,6 +167,9 @@ public class HashTableChain<K,V> implements HWHashMap<K,V> {
     
 
     private LinkedList<Entry<K, V>> getLinkedListForBucket(int bucketIndex) {
+        if(bucketIndex < 0){
+            bucketIndex += table.length;
+        }
         if (table[bucketIndex] == null) {
             table[bucketIndex] = new LinkedList<>();
         }
