@@ -1,5 +1,4 @@
 import java.io.*;
-import java.util.*;
 
 public class Compress {
 
@@ -14,8 +13,8 @@ public class Compress {
         String LogFileName = file + ".zzz.log";
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file));
-             DataOutputStream output = new DataOutputStream(new FileOutputStream(BinaryFileName));
-             FileWriter logWriter = new FileWriter(LogFileName)) {
+                DataOutputStream output = new DataOutputStream(new FileOutputStream(BinaryFileName));
+                FileWriter logWriter = new FileWriter(LogFileName)) {
 
             long startTime = System.currentTimeMillis();
 
@@ -38,11 +37,11 @@ public class Compress {
                 } else {
                     Integer code = charTable.get(temp);
                     if (code != null) {
-                        output.writeInt(code.intValue());
+                        writeVariableLengthInt(output, code.intValue());
                         charTable.put(tempPlusC, nextCode++);
                         System.out.println(tempPlusC + " " + charTable.get(tempPlusC));
                         temp = Character.toString(c);
-                    }else{
+                    } else {
                         continue;
                     }
                 }
@@ -52,7 +51,8 @@ public class Compress {
             if (!temp.isEmpty()) {
                 Integer code = charTable.get(temp);
                 if (code != null) {
-                    output.writeInt(code);
+                    // output.writeInt(code);
+                    writeVariableLengthInt(output, code.intValue());
                 }
             }
 
@@ -79,4 +79,14 @@ public class Compress {
         double sizeInKB = sizeInBytes / 1024.0;
         return String.format("%.2f Kilobytes", sizeInKB);
     }
+
+    // write variable length instead of 4 bits using .writeInt()
+    private static void writeVariableLengthInt(DataOutputStream output, int value) throws IOException {
+        while (value > 127) {
+            output.writeByte((value & 0x7F) | 0x80);
+            value >>>= 7;
+        }
+        output.writeByte(value);
+    }
+
 }

@@ -1,7 +1,6 @@
 
 public interface HWHashMap<K,V>
 {
-
     // get method to key value of key
     V get(K key);
 
