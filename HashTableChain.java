@@ -76,7 +76,7 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
 
     // methods we need to make still
     public boolean containsKey(K key) {
-        int index = hashFunction(key);
+        int index = key.hashCode() % table.length;
         if (index < 0) {
             index += table.length;
         }
@@ -100,7 +100,7 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
     }
 
     public V remove(K key) {
-        int index = hashFunction(key);
+        int index = key.hashCode() % table.length;
         if (index < 0) {
             index += table.length;
         }
@@ -125,7 +125,7 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
     };
 
     public V put(K key, V value) {
-        int index = hashFunction(key);
+        int index =  key.hashCode() % table.length;
         // LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
         if (index < 0) {
             index += table.length;
@@ -186,7 +186,7 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
         for (Entry<K, V> nextItem : allEntries) {
             int newIndex = nextItem.getKey().hashCode() % newTable.length;
             if (newIndex < 0) {
-                newIndex += table.length;
+                newIndex += newTable.length;
             }
             if (newTable[newIndex] == null) {
                 newTable[newIndex] = new LinkedList<>();
@@ -221,9 +221,6 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
         return true;
     }
 
-    private int hashFunction(K key) {
-        return key.hashCode() % table.length;
-    }
 
     // private LinkedList<Entry<K, V>> getLinkedListForBucket(int bucketIndex) {
     // if (bucketIndex < 0) {

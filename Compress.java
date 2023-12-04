@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.*;
 
 public class Compress {
 
@@ -18,42 +19,38 @@ public class Compress {
 
             long startTime = System.currentTimeMillis();
 
-            HashTableChain<String, Integer> charTable = new HashTableChain<>();
+            HashTableChain<String, Integer> HashTable = new HashTableChain<>();
+            List<Integer> compressedOutput = new ArrayList<>();
+            StringBuilder currentSequence = new StringBuilder();
 
-            for (int asciiValue = 0; asciiValue <= 127; asciiValue++) {
-                String ch = Character.toString((char) asciiValue);
-                charTable.put(ch, asciiValue);
+            // Initialize the HashTableChain with single-character sequences
+            for (int i = 0; i <128; i++) {
+                HashTable.put(Character.toString((char) i), i);
             }
 
             int nextCode = 128;
             int character;
-            String temp = "";
             while ((character = reader.read()) != -1) {
                 char c = (char) character;
-                String tempPlusC = temp + c;
+                String currentSequencePlusC = currentSequence.toString() + c; 
 
-                if (charTable.containsKey(tempPlusC)) {
-                    temp = tempPlusC;
+                if (HashTable.containsKey(currentSequencePlusC)) {
+                    currentSequence = new StringBuilder(currentSequencePlusC);
                 } else {
-                    Integer code = charTable.get(temp);
-                    if (code != null) {
-                        writeVariableLengthInt(output, code.intValue());
-                        charTable.put(tempPlusC, nextCode++);
-                        System.out.println(tempPlusC + " " + charTable.get(tempPlusC));
-                        temp = Character.toString(c);
-                    } else {
-                        continue;
-                    }
+                    compressedOutput.add(HashTable.get(currentSequence.toString()));  
+
+                    HashTable.put(currentSequencePlusC, nextCode++);
+                    currentSequence = new StringBuilder(Character.toString(c));
                 }
             }
 
-            // Handle the last character(s)
-            if (!temp.isEmpty()) {
-                Integer code = charTable.get(temp);
-                if (code != null) {
-                    // output.writeInt(code);
-                    writeVariableLengthInt(output, code.intValue());
-                }
+            // Write the code for the last sequence to the compressed output
+            compressedOutput.add(HashTable.get(currentSequence.toString()));  
+
+            // Write the compressed output to the file
+            for (int code : compressedOutput) {
+                      output.writeInt(code);
+            
             }
 
             long endTime = System.currentTimeMillis();
@@ -63,8 +60,8 @@ public class Compress {
             logWriter.write("Compression of " + file + "\n");
             logWriter.write("Compressed from " + getFileSize(file) + " to " + getFileSize(BinaryFileName) + "\n");
             logWriter.write("Compression took " + durationInSeconds + " seconds\n");
-            logWriter.write("The dictionary contains " + charTable.size() + " total entries\n");
-            logWriter.write("The table was rehashed " + charTable.numRehashes() + " times\n");
+            logWriter.write("The HashTableChain contains " + HashTable.size() + " total entries\n");  
+            logWriter.write("The table was rehashed " + HashTable.numRehashes() + " times\n");  
 
         } catch (FileNotFoundException e) {
             System.out.println("File was not found. Please try again!");
@@ -79,14 +76,4 @@ public class Compress {
         double sizeInKB = sizeInBytes / 1024.0;
         return String.format("%.2f Kilobytes", sizeInKB);
     }
-
-    // write variable length instead of 4 bits using .writeInt()
-    private static void writeVariableLengthInt(DataOutputStream output, int value) throws IOException {
-        while (value > 127) {
-            output.writeByte((value & 0x7F) | 0x80);
-            value >>>= 7;
-        }
-        output.writeByte(value);
-    }
-
 }
