@@ -7,6 +7,7 @@ public class Compress {
         String file = null;
         FileInputStream inputFile = null;
         Scanner keyboard = new Scanner(System.in);
+        boolean run = true;
         // verify user is passing a file as a command line argument and if they are not,
         // get filename from them.
         if (args.length > 0) {
@@ -18,7 +19,7 @@ public class Compress {
 
         // process file if it can be found, otherwise prompt user to try entering
         // filename again/give user option to compress another file.
-        while (true) {
+        while (run) {
             String BinaryFileName = file + ".zzz";
             String LogFileName = file + ".zzz.log";
 
@@ -79,18 +80,26 @@ public class Compress {
                 logWriter.write("Compression took " + durationInSeconds + " seconds\n");
                 logWriter.write("The HashTableChain contains " + HashTable.size() + " total entries\n");
                 logWriter.write("The table was rehashed " + HashTable.numRehashes() + " times\n");
-                System.out.println("Success! Would you like to compress another file? (Enter y/n): ");
-                String userResponse = keyboard.nextLine();
 
-                if (userResponse.equalsIgnoreCase("y")) {
-                    System.out.println("Enter the name of the file:");
-                    file = keyboard.nextLine();
-                } else if (userResponse.equalsIgnoreCase("n")) {
-                    System.out.println("File(s) successfully compressed!");
-                    System.out.println("Goodbye!");
-                    break;
-                } else {
-                    System.out.println("--- Error with your response! Please enter y or n!---");
+                System.out.println("Success!");
+                System.out.println("Would you like to compress another file? (Enter y/n): ");
+                String userResponse = keyboard.nextLine();
+                boolean userRunAgain = true;
+                while (userRunAgain) {
+                    if (userResponse.equalsIgnoreCase("y")) {
+                        System.out.println("Enter the name of the file:");
+                        file = keyboard.nextLine();
+                        userRunAgain = false;
+                    } else if (userResponse.equalsIgnoreCase("n")) {
+                        System.out.println("File(s) successfully compressed!");
+                        System.out.println("Goodbye!");
+                        userRunAgain = false;
+                        run = false;
+                        break;
+                    } else {
+                        System.out.println("--- Error with your response! Please enter y or n!---");
+                        userResponse = keyboard.nextLine();
+                    }
                 }
             } catch (IOException e) {
                 System.out.println("Failed to find file. Please enter a valid filename: ");

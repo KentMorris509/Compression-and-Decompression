@@ -85,7 +85,8 @@ public class Decompress {
                 logWriter.write("Decompression took " + durationInSeconds + " seconds.\n");
                 logWriter.write("The table was doubled " + doubled + " times (perfect hash table).\n");
 
-                System.out.println("Success! Would you like to decompress another file? (Enter y/n): ");
+                System.out.println("Success! Log file saved to: " + logFilePath);
+                System.out.println("Would you like to decompress another file? (Enter y/n): ");
                 String userResponse = keyboard.nextLine();
                 boolean userRunAgain = true;
                 while (userRunAgain) {
@@ -95,7 +96,6 @@ public class Decompress {
                         userRunAgain = false;
                     } else if (userResponse.equalsIgnoreCase("n")) {
                         System.out.println("File(s) succesfully decompressed!");
-                        System.out.println("Log file saved to: " + logFilePath);
                         System.out.println("Goodbye!");
                         userRunAgain = false;
                         run = false;
