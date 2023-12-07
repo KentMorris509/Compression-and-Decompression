@@ -4,76 +4,114 @@ import java.util.*;
 public class Compress {
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            System.out.println("Please provide a file path as a command-line argument.");
-            return;
+        String file = null;
+        FileInputStream inputFile = null;
+        Scanner keyboard = new Scanner(System.in);
+        // verify user is passing a file as a command line argument and if they are not,
+        // get filename from them.
+        if (args.length > 0) {
+            file = args[0];
+        } else {
+            System.out.println("Failed to find file. Please enter a valid filename: ");
+            file = keyboard.nextLine();
         }
 
-        String file = args[0];
-        String BinaryFileName = file + ".zzz";
-        String LogFileName = file + ".zzz.log";
+        // process file if it can be found, otherwise prompt user to try entering
+        // filename again/give user option to compress another file.
+        while (true) {
+            String BinaryFileName = file + ".zzz";
+            String LogFileName = file + ".zzz.log";
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(file));
-                DataOutputStream output = new DataOutputStream(new FileOutputStream(BinaryFileName));
-                FileWriter logWriter = new FileWriter(LogFileName)) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file));
+                    DataOutputStream output = new DataOutputStream(new FileOutputStream(BinaryFileName));
+                    FileWriter logWriter = new FileWriter(LogFileName)) {
 
-            long startTime = System.currentTimeMillis();
+                long startTime = System.currentTimeMillis();
 
-            HashTableChain<String, Integer> HashTable = new HashTableChain<>();
-            List<Integer> compressedOutput = new ArrayList<>();
-            StringBuilder currentSequence = new StringBuilder();
+                int capacity = 101; // default
+                double sizeInKB = getFileSize(file);
 
-            // Initialize the HashTableChain with single-character sequences
-            for (int i = 0; i <128; i++) {
-                HashTable.put(Character.toString((char) i), i);
-            }
-
-            int nextCode = 128;
-            int character;
-            while ((character = reader.read()) != -1) {
-                char c = (char) character;
-                String currentSequencePlusC = currentSequence.toString() + c; 
-
-                if (HashTable.containsKey(currentSequencePlusC)) {
-                    currentSequence = new StringBuilder(currentSequencePlusC);
+                if (sizeInKB / 12 > 101) {
+                    capacity = (int) sizeInKB * 12;
                 } else {
-                    compressedOutput.add(HashTable.get(currentSequence.toString()));  
+                    capacity = 101; // default
+                }
+                HashTableChain<String, Integer> HashTable = new HashTableChain<>(capacity);
+                List<Integer> compressedOutput = new ArrayList<>();
+                StringBuilder currentSequence = new StringBuilder();
 
-                    HashTable.put(currentSequencePlusC, nextCode++);
-                    currentSequence = new StringBuilder(Character.toString(c));
+                for (int i = 0; i < 128; i++) {
+                    HashTable.put(Character.toString((char) i), i);
+                }
+
+                int nextCode = 128;
+                int character;
+                while ((character = reader.read()) != -1) {
+                    char c = (char) character;
+                    String currentSequencePlusC = currentSequence.toString() + c;
+
+                    if (HashTable.containsKey(currentSequencePlusC)) {
+                        currentSequence = new StringBuilder(currentSequencePlusC);
+                    } else {
+                        compressedOutput.add(HashTable.get(currentSequence.toString()));
+
+                        HashTable.put(currentSequencePlusC, nextCode++);
+                        currentSequence = new StringBuilder(Character.toString(c));
+                    }
+                }
+
+                // Write the code for the last sequence to the compressed output
+                compressedOutput.add(HashTable.get(currentSequence.toString()));
+
+                // Write the compressed output to the file
+                for (int code : compressedOutput) {
+                    output.writeInt(code);
+
+                }
+
+                long endTime = System.currentTimeMillis();
+                double durationInSeconds = (endTime - startTime) / 1000.0;
+
+                // Log compression details to the log file
+                logWriter.write("Compression of " + file + "\n");
+                logWriter.write("Compressed from " + String.format("%.2f Kilobytes", getFileSize(file)) + " to "
+                        + String.format("%.2f Kilobytes", getFileSize(BinaryFileName)) + "\n");
+                logWriter.write("Compression took " + durationInSeconds + " seconds\n");
+                logWriter.write("The HashTableChain contains " + HashTable.size() + " total entries\n");
+                logWriter.write("The table was rehashed " + HashTable.numRehashes() + " times\n");
+                System.out.println("Success! Would you like to compress another file? (Enter y/n): ");
+                String userResponse = keyboard.nextLine();
+
+                if (userResponse.equalsIgnoreCase("y")) {
+                    System.out.println("Enter the name of the file:");
+                    file = keyboard.nextLine();
+                } else if (userResponse.equalsIgnoreCase("n")) {
+                    System.out.println("File(s) successfully compressed!");
+                    System.out.println("Goodbye!");
+                    break;
+                } else {
+                    System.out.println("--- Error with your response! Please enter y or n!---");
+                }
+            } catch (IOException e) {
+                System.out.println("Failed to find file. Please enter a valid filename: ");
+                file = keyboard.nextLine();
+            } finally {
+                if (inputFile != null) {
+                    try {
+                        inputFile.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-
-            // Write the code for the last sequence to the compressed output
-            compressedOutput.add(HashTable.get(currentSequence.toString()));  
-
-            // Write the compressed output to the file
-            for (int code : compressedOutput) {
-                      output.writeInt(code);
-            
-            }
-
-            long endTime = System.currentTimeMillis();
-            double durationInSeconds = (endTime - startTime) / 1000.0;
-
-            // Log compression details to the log file
-            logWriter.write("Compression of " + file + "\n");
-            logWriter.write("Compressed from " + getFileSize(file) + " to " + getFileSize(BinaryFileName) + "\n");
-            logWriter.write("Compression took " + durationInSeconds + " seconds\n");
-            logWriter.write("The HashTableChain contains " + HashTable.size() + " total entries\n");  
-            logWriter.write("The table was rehashed " + HashTable.numRehashes() + " times\n");  
-
-        } catch (FileNotFoundException e) {
-            System.out.println("File was not found. Please try again!");
-        } catch (IOException e) {
-            System.out.println("An IOException occurred: " + e.getMessage());
         }
+        keyboard.close();
     }
 
-    private static String getFileSize(String filePath) {
+    private static double getFileSize(String filePath) {
         File file = new File(filePath);
         long sizeInBytes = file.length();
         double sizeInKB = sizeInBytes / 1024.0;
-        return String.format("%.2f Kilobytes", sizeInKB);
+        return sizeInKB;
     }
 }

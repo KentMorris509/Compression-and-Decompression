@@ -42,7 +42,7 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
     private int numKeys;
     private int rehashes;
     private static final int CAPACITY = 101; // We need to figure our what to make the default capacity, Im thinking 181
-    private static final double LOAD_THRESHOLD = .15; // I think he recommended 15
+    private static final double LOAD_THRESHOLD = 12; // I think he recommended 15
 
     @SuppressWarnings("unchecked")
     public HashTableChain() {
@@ -53,6 +53,8 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
 
     @SuppressWarnings("unchecked")
     public HashTableChain(int cap) {
+        if (!isPrime(cap))
+            cap = nextPrime(cap);
         table = new LinkedList[cap];
         numKeys = 0;
         rehashes = 0;
@@ -125,7 +127,7 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
     };
 
     public V put(K key, V value) {
-        int index =  key.hashCode() % table.length;
+        int index = key.hashCode() % table.length;
         // LinkedList<Entry<K, V>> bucketList = getLinkedListForBucket(index);
         if (index < 0) {
             index += table.length;
@@ -149,7 +151,7 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
         table[index].addFirst(new Entry<>(key, value));
         numKeys++;
 
-        if (table[index].size() > (LOAD_THRESHOLD * table.length)) {
+        if (table[index].size() > (LOAD_THRESHOLD)) {
             rehashTable();
         }
         return null;
@@ -221,31 +223,4 @@ public class HashTableChain<K, V> implements HWHashMap<K, V> {
         return true;
     }
 
-
-    // private LinkedList<Entry<K, V>> getLinkedListForBucket(int bucketIndex) {
-    // if (bucketIndex < 0) {
-    // bucketIndex += table.length;
-    // }
-    // if (table[bucketIndex] == null) {
-    // table[bucketIndex] = new LinkedList<>();
-    // }
-    // return table[bucketIndex];
-    // }
-
-    // public static void main(String[] args) {
-    // HashTableChain<String, Integer> hashMap = new HashTableChain<>();
-
-    // // Example usage
-    // hashMap.put("one", 1);
-    // hashMap.put("two", 2);
-    // hashMap.put("three", 3);
-
-    // System.out.println("Size: " + hashMap.size());
-    // System.out.println("Contains key 'two': " + hashMap.containsKey("two"));
-    // System.out.println("Value for key 'three': " + hashMap.get("three"));
-
-    // hashMap.remove("one");
-
-    // System.out.println("Size after removal: " + hashMap.size());
-    // }
 }
